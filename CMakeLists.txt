@@ -40,7 +40,7 @@ if (EMSCRIPTEN OR PLATFORM STREQUAL "Web")
         FetchContent_MakeAvailable(raylib)
     endif()
 
-    # Gera index.html (+ index.js, index.wasm, index.data) prontos para GitHub Pages
+    # Gera index.html (+ index.js e index.wasm com assets embutidos) prontos para GitHub Pages
     add_executable(index ${SOURCES})
     target_include_directories(index PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/headers)
     target_link_libraries(index PRIVATE raylib)
@@ -49,20 +49,24 @@ if (EMSCRIPTEN OR PLATFORM STREQUAL "Web")
 
     set_target_properties(index PROPERTIES
         SUFFIX ".html"
-        LINK_FLAGS "-s USE_GLFW=3 -s ALLOW_MEMORY_GROWTH=1 --preload-file ${CMAKE_CURRENT_SOURCE_DIR}/assets@assets --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/shell.html"
+        LINK_FLAGS "-s USE_GLFW=3 -s ALLOW_MEMORY_GROWTH=1 --embed-file ${CMAKE_CURRENT_SOURCE_DIR}/assets@assets --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/shell.html"
         LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/shell.html"
     )
 
-    # Copia os artefatos estáticos para docs/ (hospedagem direta via GitHub Pages)
+    # Copia os artefatos estáticos para a raiz e para docs/ (suporta GitHub Pages em / ou /docs)
     add_custom_command(TARGET index POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_SOURCE_DIR}/docs"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "$<TARGET_FILE_DIR:index>/index.html"
             "$<TARGET_FILE_DIR:index>/index.js"
             "$<TARGET_FILE_DIR:index>/index.wasm"
-            "$<TARGET_FILE_DIR:index>/index.data"
             "${CMAKE_CURRENT_SOURCE_DIR}/docs"
-        COMMENT "Copiando arquivos WebAssembly para docs/ (GitHub Pages)"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE_DIR:index>/index.html"
+            "$<TARGET_FILE_DIR:index>/index.js"
+            "$<TARGET_FILE_DIR:index>/index.wasm"
+            "${CMAKE_CURRENT_SOURCE_DIR}"
+        COMMENT "Copiando arquivos WebAssembly para a raiz e docs/ (GitHub Pages)"
     )
 else()
     # Configuração local (Linux / Desktop)
