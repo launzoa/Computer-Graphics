@@ -50,6 +50,7 @@ if (EMSCRIPTEN OR PLATFORM STREQUAL "Web")
     set_target_properties(index PROPERTIES
         SUFFIX ".html"
         LINK_FLAGS "-s USE_GLFW=3 -s ALLOW_MEMORY_GROWTH=1 --preload-file ${CMAKE_CURRENT_SOURCE_DIR}/assets@assets --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/shell.html"
+        LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/shell.html"
     )
 
     # Copia os artefatos estáticos para docs/ (hospedagem direta via GitHub Pages)

@@ -25,6 +25,22 @@
             margin-bottom: 10px;
             font-size: 14px;
             color: #94a3b8;
+            text-align: center;
+            max-width: 720px;
+        }
+        #error-box {
+            display: none;
+            margin-bottom: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid #ef4444;
+            background-color: rgba(127, 29, 29, 0.45);
+            color: #fecaca;
+            font-size: 13.5px;
+            line-height: 1.5;
+            max-width: 720px;
+            text-align: left;
+            white-space: pre-wrap;
         }
         canvas.emscripten {
             border: 2px solid #2563eb;
@@ -40,10 +56,39 @@
 </head>
 <body>
     <div id="status">Carregando módulo WebAssembly...</div>
+    <div id="error-box"></div>
     <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
 
     <script>
         var statusElement = document.getElementById('status');
+        var errorBox = document.getElementById('error-box');
+
+        function showLoadError(msg) {
+            errorBox.style.display = 'block';
+            errorBox.textContent = msg;
+        }
+
+        if (window.location.protocol === 'file:') {
+            statusElement.textContent = 'Execução bloqueada via file://';
+            showLoadError(
+                'Navegadores bloqueiam WebAssembly (.wasm / .data) quando aberto diretamente como arquivo local (file://).\n' +
+                'Para testar localmente, execute no terminal:\n' +
+                '  python3 -m http.server 8080 --directory docs\n' +
+                'e acesse: http://localhost:8080'
+            );
+        }
+
+        window.addEventListener('error', function(e) {
+            if (e && e.message) {
+                showLoadError('Erro ao carregar WebAssembly: ' + e.message);
+            }
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            var reason = (e && e.reason) ? String(e.reason) : 'Falha ao buscar index.wasm ou index.data.';
+            showLoadError('Erro de carregamento: ' + reason);
+        });
+
         var Module = {
             canvas: (function() {
                 var canvas = document.getElementById('canvas');
@@ -53,6 +98,15 @@
                 }, false);
                 return canvas;
             })(),
+            printErr: function(text) {
+                console.error(text);
+                if (typeof text === 'string' && /error|failed|exception|abort|webgl/i.test(text)) {
+                    showLoadError(text);
+                }
+            },
+            onAbort: function(what) {
+                showLoadError('Execução interrompida: ' + what);
+            },
             setStatus: function(text) {
                 if (!text) {
                     statusElement.style.display = 'none';
